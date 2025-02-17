@@ -75,7 +75,7 @@ async fn get_scores(
     let mut message = String::new();
     let mut i = 1;
     for row in rows {
-        message.push_str(&format!("#{} **{} WPM:** <@{}> on {}\n", i, &row.get::<String, _>("Speed"), row.get::<String, _>("User"), &row.get::<String, _>("Layout")));
+        message.push_str(&format!("#{} **{} WPM**: <@{}> on {}\n", i, &row.get::<String, _>("Speed"), row.get::<String, _>("User"), &row.get::<String, _>("Layout")));
         i += 1;
     }
 
