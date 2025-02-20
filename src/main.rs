@@ -1,4 +1,5 @@
-use poise::serenity_prelude::{self as serenity, UserId};
+use poise::serenity_prelude::{self as serenity, CreateEmbed, CreateMessage, Embed, EmbedMessageBuilding, MessageBuilder, UserId};
+use serenity::builder::CreateAllowedMentions as Am;
 use sqlx::{SqlitePool, Row};
 use dotenv::dotenv;
 
@@ -79,7 +80,9 @@ async fn get_scores(
         i += 1;
     }
 
-    ctx.say(message).await?;
+    let embed = CreateEmbed::new().title("Leaderboard").field("Scores", message, false);
+    let message = CreateMessage::new().allowed_mentions(Am::default()).embed(embed);
+    ctx.channel_id().send_message(&ctx, message).await?;
     Ok(())
 }
 #[poise::command(slash_command, prefix_command)]
