@@ -94,7 +94,7 @@ async fn insert_layout(
     #[description = "Thumb alpha flag"] thumb_alpha: bool,
     #[description = "Focus type"] focus: String,
 ) -> Result<(), Error> {
-    let pool = SqlitePool::connect("sqlite:scores.db").await?;
+    let pool = SqlitePool::connect("sqlite:/var/lib/garf/scores.db").await?;
 
     sqlx::query(
         r#"
