@@ -22,6 +22,7 @@ async fn get_scores(
     #[description = "Filter by creator"] creator_filter: Option<String>,
 ) -> Result<(), Error> {
     let pool = SqlitePool::connect("sqlite:/var/lib/garf/scores.db").await?;
+    ctx.defer().await?;
 
     let creator_id = match creator_filter {
         Some(ref creator) => {
