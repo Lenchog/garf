@@ -127,6 +127,24 @@ async fn insert_layout(
 }
 
 #[poise::command(slash_command, prefix_command)]
+async fn delete_layout(
+    ctx: Context<'_>,
+    #[description = "Layout name of the score to delete"] layout_name: String,
+) -> Result<(), Error> {
+    ctx.defer().await?;
+
+    // Connect to the database
+    let pool = SqlitePool::connect("sqlite:/var/lib/garf/scores.db").await?;
+
+    // Execute the DELETE query
+    let result = sqlx::query("DELETE FROM layout WHERE Name = ?1")
+        .bind(&layout_name)
+        .execute(&pool)
+        .await?;
+    Ok(())
+}
+
+#[poise::command(slash_command, prefix_command)]
 async fn insert_score(
     ctx: Context<'_>,
     #[description = "Name of the layout"] layout: String,
