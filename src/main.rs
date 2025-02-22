@@ -190,7 +190,7 @@ async fn main() {
 
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
-            commands: vec![get_scores(), insert_layout(), insert_score()],
+            commands: vec![get_scores(), insert_layout(), insert_score(), delete_layout()],
             ..Default::default()
         })
         .setup(|ctx, _ready, framework| {
