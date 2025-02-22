@@ -1,7 +1,10 @@
-use poise::serenity_prelude::{self as serenity, CreateEmbed, CreateMessage, Embed, EmbedMessageBuilding, MessageBuilder, UserId};
-use serenity::builder::CreateAllowedMentions as Am;
-use sqlx::{SqlitePool, Row};
 use dotenv::dotenv;
+use poise::serenity_prelude::{
+    self as serenity, CreateEmbed, CreateMessage, Embed, EmbedMessageBuilding, MessageBuilder,
+    UserId,
+};
+use serenity::builder::CreateAllowedMentions as Am;
+use sqlx::{Row, SqlitePool};
 
 struct Data {} // User data, which is stored and accessible in all command invocations
 
@@ -20,29 +23,27 @@ async fn get_scores(
 ) -> Result<(), Error> {
     let pool = SqlitePool::connect("sqlite:/var/lib/garf/scores.db").await?;
 
-    let creator_id = 
-        match creator_filter {
+    let creator_id = match creator_filter {
         Some(ref creator) => {
             if creator.starts_with("<@") && creator.ends_with('>') {
                 Some(&creator[2..creator.len() - 1])
             } else {
                 creator_filter.as_deref()
-            }    
+            }
         }
-        None => creator_filter.as_deref()
+        None => creator_filter.as_deref(),
     };
-    let user_id = 
-        match user_filter {
+    let user_id = match user_filter {
         Some(ref user) => {
             if user.starts_with("<@") && user.ends_with('>') {
                 Some(&user[2..user.len() - 1])
             } else {
                 user_filter.as_deref()
-            }    
+            }
         }
-        None => user_filter.as_deref()
+        None => user_filter.as_deref(),
     };
- let rows = sqlx::query(
+    let rows = sqlx::query(
         r#"
         SELECT 
             User,
@@ -76,12 +77,22 @@ async fn get_scores(
     let mut message = String::new();
     let mut i = 1;
     for row in rows {
-        message.push_str(&format!("#{} **{} WPM**: <@{}> on {}\n", i, &row.get::<String, _>("Speed"), row.get::<String, _>("User"), &row.get::<String, _>("Layout")));
+        message.push_str(&format!(
+            "#{} **{} WPM**: <@{}> on {}\n",
+            i,
+            &row.get::<String, _>("Speed"),
+            row.get::<String, _>("User"),
+            &row.get::<String, _>("Layout")
+        ));
         i += 1;
     }
 
-    let embed = CreateEmbed::new().title("Leaderboard").field("Scores", message, false);
-    let message = CreateMessage::new().allowed_mentions(Am::default()).embed(embed);
+    let embed = CreateEmbed::new()
+        .title("Leaderboard")
+        .field("Scores", message, false);
+    let message = CreateMessage::new()
+        .allowed_mentions(Am::default())
+        .embed(embed);
     ctx.channel_id().send_message(&ctx, message).await?;
     Ok(())
 }
