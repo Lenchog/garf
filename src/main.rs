@@ -120,7 +120,7 @@ async fn insert_score(
     #[description = "Name of the layout"] layout: String,
     #[description = "Speed of the score"] speed: u16,
 ) -> Result<(), Error> {
-    let pool = SqlitePool::connect("sqlite:scores.db").await?;
+    let pool = SqlitePool::connect("sqlite:/var/lib/garf/scores.db").await?;
     let user_id = ctx.author().id.to_string();
 
     // Get the LayoutId for the given layout name
