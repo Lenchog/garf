@@ -63,6 +63,7 @@ async fn get_scores(
     #[autocomplete = "autocomplete_focus"]
      focus_filter: Option<String>,
     #[description = "Filter by creator"] creator_filter: Option<String>,
+    #[description = "Page to view"] page: Option<u8>,
 ) -> Result<(), Error> {
     // Defer the response to indicate the bot is processing
     ctx.defer().await?;
@@ -70,6 +71,10 @@ async fn get_scores(
     let db_path = std::env::var("GARFDB_PATH").unwrap_or("/var/lib/garf/scores.db".into());
     let pool = SqlitePool::connect(&format!("sqlite:{}", db_path)).await?;
 
+    let page_unwrapped = match page {
+        Some(ref page) => page - 1,
+        None => 0
+    };
     // Extract the raw user ID from the creator_filter string
     let creator_id = match creator_filter {
         Some(ref creator) => {
@@ -130,13 +135,15 @@ async fn get_scores(
     let mut message = String::new();
     let mut i = 1;
     for row in rows {
-        message.push_str(&format!(
-            "#{} **{} WPM**: <@{}> on {}\n",
-            i,
-            &row.get::<i64, _>("Speed"),
-            row.get::<String, _>("User"),
-            &row.get::<String, _>("Layout")
-        ));
+        if i > page_unwrapped * 10 && i <= page_unwrapped * 10 + 10 {
+            message.push_str(&format!(
+                "#{} **{} WPM**: <@{}> on {}\n",
+                i,
+                &row.get::<i64, _>("Speed"),
+                row.get::<String, _>("User"),
+                &row.get::<String, _>("Layout")
+            ));
+        }
         i += 1;
     }
 
