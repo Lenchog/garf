@@ -1,7 +1,7 @@
 use dotenv::dotenv;
 use poise::{
     CreateReply,
-    serenity_prelude::{self as serenity, CreateEmbed, UserId},
+    serenity_prelude::{self as serenity, CreateEmbed, UserId, futures::{self, Stream, StreamExt}},
 };
 use sqlx::{Row, SqlitePool};
 
@@ -10,6 +10,17 @@ struct Data {} // User data, which is stored and accessible in all command invoc
 type Error = Box<dyn std::error::Error + Send + Sync>;
 type Context<'a> = poise::Context<'a, Data, Error>;
 
+async fn autocomplete_focus<'a>(
+    _ctx: Context<'_>,
+    focus: &'a str,
+) -> impl Stream<Item = String> + 'a {
+    futures::stream::iter(&["sfb", "sfs", "alt", "inroll", "outroll", "onehands", "redirects"])
+        .filter(move |name| {
+            futures::future::ready(name.to_lowercase().contains(&focus.to_lowercase()))
+        })
+        .map(|name| name.to_string())
+}
+
 #[poise::command(slash_command, prefix_command)]
 async fn insert_layout(
     ctx: Context<'_>,
@@ -17,7 +28,9 @@ async fn insert_layout(
     #[description = "Name of the layout"] name: String,
     #[description = "Magic flag"] magic: bool,
     #[description = "Thumb alpha flag"] thumb_alpha: bool,
-    #[description = "Focus type"] focus: String,
+    #[description = "Focus type"]
+    #[autocomplete = "autocomplete_focus"]
+    focus: String,
 ) -> Result<(), Error> {
     let pool = SqlitePool::connect("sqlite:/var/lib/garf/scores.db").await?;
 
@@ -45,7 +58,9 @@ async fn get_scores(
     #[description = "Filter by layout"] layout_filter: Option<String>,
     #[description = "Filter by magic"] magic_filter: Option<bool>,
     #[description = "Filter by thumb alpha"] thumb_alpha_filter: Option<bool>,
-    #[description = "Filter by focus"] focus_filter: Option<String>,
+    #[description = "Filter by focus"]
+    #[autocomplete = "autocomplete_focus"]
+     focus_filter: Option<String>,
     #[description = "Filter by creator"] creator_filter: Option<String>,
 ) -> Result<(), Error> {
     // Defer the response to indicate the bot is processing
