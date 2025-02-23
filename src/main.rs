@@ -162,7 +162,7 @@ async fn insert_score(
     // Get the LayoutId for the given layout name
     let layout_id = sqlx::query(
         r#"
-        SELECT LayoutId FROM layout WHERE Name = ?1
+        SELECT LayoutId FROM layout WHERE Name = ?1 COLLATE NOCASE
         "#,
     )
     .bind(&layout)
