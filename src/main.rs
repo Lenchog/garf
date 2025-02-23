@@ -1,9 +1,12 @@
 use dotenv::dotenv;
-use poise::serenity_prelude::{
-    self as serenity, CreateEmbed, CreateMessage, Embed, EmbedMessageBuilding, MessageBuilder,
-    UserId,
+use poise::{
+    serenity_prelude::{
+        self as serenity, CreateEmbed, /* CreateMessage, Embed, EmbedMessageBuilding, MessageBuilder, */
+        UserId,
+    },
+    CreateReply
 };
-use serenity::builder::CreateAllowedMentions as Am;
+//use serenity::builder::CreateAllowedMentions as Am;
 use sqlx::{Row, SqlitePool};
 
 struct Data {} // User data, which is stored and accessible in all command invocations
@@ -11,7 +14,7 @@ struct Data {} // User data, which is stored and accessible in all command invoc
 type Error = Box<dyn std::error::Error + Send + Sync>;
 type Context<'a> = poise::Context<'a, Data, Error>;
 
-#[poise::command(slash_command, prefix_command)]
+/* #[poise::command(slash_command, prefix_command)]
 async fn get_scores(
     ctx: Context<'_>,
     #[description = "Filter by user"] user_filter: Option<String>,
@@ -23,7 +26,6 @@ async fn get_scores(
 ) -> Result<(), Error> {
     let pool = SqlitePool::connect("sqlite:/var/lib/garf/scores.db").await?;
     ctx.defer().await?;
-
     let creator_id = match creator_filter {
         Some(ref creator) => {
             if creator.starts_with("<@") && creator.ends_with('>') {
@@ -91,12 +93,19 @@ async fn get_scores(
     let embed = CreateEmbed::new()
         .title("Leaderboard")
         .field("Scores", message, false);
-    let message = CreateMessage::new()
+    /* let message = CreateMessage::new()
         .allowed_mentions(Am::default())
         .embed(embed);
-    ctx.channel_id().send_message(&ctx, message).await?;
+    ctx.channel_id().send_message(&ctx, message).await?; */
+ctx.send(|m| {
+        m.embed(|e| {
+            *e = embed;
+            e
+        })
+    })
+    .await?;
     Ok(())
-}
+} */
 #[poise::command(slash_command, prefix_command)]
 async fn insert_layout(
     ctx: Context<'_>,
@@ -125,7 +134,99 @@ async fn insert_layout(
     ctx.say("Layout inserted successfully!").await?;
     Ok(())
 }
+#[poise::command(slash_command, prefix_command)]
+async fn get_scores(
+    ctx: Context<'_>,
+    #[description = "Filter by user"] user_filter: Option<String>,
+    #[description = "Filter by layout"] layout_filter: Option<String>,
+    #[description = "Filter by magic"] magic_filter: Option<bool>,
+    #[description = "Filter by thumb alpha"] thumb_alpha_filter: Option<bool>,
+    #[description = "Filter by focus"] focus_filter: Option<String>,
+    #[description = "Filter by creator"] creator_filter: Option<String>,
+) -> Result<(), Error> {
+    // Defer the response to indicate the bot is processing
+    ctx.defer().await?;
 
+    let pool = SqlitePool::connect("sqlite:/var/lib/garf/scores.db").await?;
+
+    // Extract the raw user ID from the creator_filter string
+    let creator_id = match creator_filter {
+        Some(ref creator) => {
+            if creator.starts_with("<@") && creator.ends_with('>') {
+                Some(&creator[2..creator.len() - 1])
+            } else {
+                creator_filter.as_deref()
+            }
+        }
+        None => creator_filter.as_deref(),
+    };
+
+    // Extract the raw user ID from the user_filter string
+    let user_id = match user_filter {
+        Some(ref user) => {
+            if user.starts_with("<@") && user.ends_with('>') {
+                Some(&user[2..user.len() - 1])
+            } else {
+                user_filter.as_deref()
+            }
+        }
+        None => user_filter.as_deref(),
+    };
+
+    // Execute the query
+    let rows = sqlx::query(
+        r#"
+        SELECT 
+            User,
+            Speed,
+            Layout, 
+            Magic, 
+            ThumbAlpha, 
+            Focus, 
+            Creator 
+        FROM 
+            score
+            INNER JOIN layout USING (LayoutId)
+        WHERE User = COALESCE(?1, User)
+            AND Layout = COALESCE(?2, Layout)
+            AND Magic = COALESCE(?3, Magic)
+            AND ThumbAlpha = COALESCE(?4, ThumbAlpha)
+            AND Focus = COALESCE(?5, Focus)
+            AND Creator = COALESCE(?6, Creator)
+        ORDER BY Speed DESC
+        "#,
+    )
+    .bind(user_id)
+    .bind(layout_filter)
+    .bind(magic_filter)
+    .bind(thumb_alpha_filter)
+    .bind(focus_filter)
+    .bind(creator_id)
+    .fetch_all(&pool)
+    .await?;
+
+    // Build the message
+    let mut message = String::new();
+    let mut i = 1;
+    for row in rows {
+        message.push_str(&format!(
+            "#{} **{} WPM**: <@{}> on {}\n",
+            i,
+            &row.get::<String, _>("Speed"),
+            row.get::<String, _>("User"),
+            &row.get::<String, _>("Layout")
+        ));
+        i += 1;
+    }
+
+    // Create the embed
+    let embed = CreateEmbed::new()
+        .title("Leaderboard")
+        .field("Scores", message, false);
+    ctx.send(CreateReply::default().embed(embed)).await?;
+
+    Ok(())
+}
 #[poise::command(slash_command, prefix_command)]
 async fn delete_layout(
     ctx: Context<'_>,
@@ -137,7 +238,7 @@ async fn delete_layout(
     let pool = SqlitePool::connect("sqlite:/var/lib/garf/scores.db").await?;
 
     // Execute the DELETE query
-    let result = sqlx::query("DELETE FROM layout WHERE Name = ?1")
+    let _result = sqlx::query("DELETE FROM layout WHERE Name = ?1")
         .bind(&layout_name)
         .execute(&pool)
         .await?;
