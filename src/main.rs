@@ -83,7 +83,7 @@ async fn get_scores(
         SELECT 
             User,
             Speed,
-            Layout, 
+            layout.Name AS Layout,
             Magic, 
             ThumbAlpha, 
             Focus, 
@@ -116,7 +116,7 @@ async fn get_scores(
         message.push_str(&format!(
             "#{} **{} WPM**: <@{}> on {}\n",
             i,
-            &row.get::<String, _>("Speed"),
+            &row.get::<i64, _>("Speed"),
             row.get::<String, _>("User"),
             &row.get::<String, _>("Layout")
         ));
@@ -155,14 +155,13 @@ async fn insert_score(
     // Insert the score
     sqlx::query(
         r#"
-        INSERT INTO score (LayoutId, Layout, User, Speed)
-        VALUES (?1, ?2, ?3, ?4)
+        INSERT INTO score (LayoutId, User, Speed)
+        VALUES (?1, ?2, ?3)
         "#,
     )
     .bind(layout_id)
-    .bind(&layout)
     .bind(user_id)
-    .bind(speed.to_string())
+    .bind(speed)
     .execute(&pool)
     .await?;
 

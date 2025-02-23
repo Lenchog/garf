@@ -10,8 +10,7 @@ CREATE TABLE IF NOT EXISTS layout (
 
 CREATE TABLE IF NOT EXISTS score (
     LayoutId INTEGER NOT NULL,
-    Layout TEXT NOT NULL,
     User TEXT NOT NULL,
-    Speed TEXT NOT NULL,
+    Speed INTEGER NOT NULL,
     FOREIGN KEY (LayoutId) REFERENCES layout (LayoutId)
 );
