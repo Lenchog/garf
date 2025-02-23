@@ -19,7 +19,8 @@ async fn insert_layout(
     #[description = "Thumb alpha flag"] thumb_alpha: bool,
     #[description = "Focus type"] focus: String,
 ) -> Result<(), Error> {
-    let pool = SqlitePool::connect("sqlite:/var/lib/garf/scores.db").await?;
+    let db_path = std::env::var("GARFDB_PATH").unwrap_or("/var/lib/garf/scores.db".into());
+    let pool = SqlitePool::connect(&format!("sqlite:{}", db_path)).await?;
 
     sqlx::query(
         r#"
@@ -51,7 +52,8 @@ async fn get_scores(
     // Defer the response to indicate the bot is processing
     ctx.defer().await?;
 
-    let pool = SqlitePool::connect("sqlite:/var/lib/garf/scores.db").await?;
+    let db_path = std::env::var("GARFDB_PATH").unwrap_or("/var/lib/garf/scores.db".into());
+    let pool = SqlitePool::connect(&format!("sqlite:{}", db_path)).await?;
 
     // Extract the raw user ID from the creator_filter string
     let creator_id = match creator_filter {
@@ -138,7 +140,8 @@ async fn insert_score(
     #[description = "Name of the layout"] layout: String,
     #[description = "Speed of the score"] speed: u16,
 ) -> Result<(), Error> {
-    let pool = SqlitePool::connect("sqlite:/var/lib/garf/scores.db").await?;
+    let db_path = std::env::var("GARFDB_PATH").unwrap_or("/var/lib/garf/scores.db".into());
+    let pool = SqlitePool::connect(&format!("sqlite:{}", db_path)).await?;
     let user_id = ctx.author().id.to_string();
 
     // Get the LayoutId for the given layout name
