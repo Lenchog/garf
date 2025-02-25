@@ -22,7 +22,7 @@ async fn autocomplete_focus<'a>(
 }
 
 #[poise::command(slash_command, prefix_command)]
-async fn insert_layout(
+async fn upload_layout(
     ctx: Context<'_>,
     #[description = "Creator of the layout"] creator: UserId,
     #[description = "Name of the layout"] name: String,
@@ -49,11 +49,11 @@ async fn insert_layout(
     .execute(&pool)
     .await?;
 
-    ctx.say("Layout inserted successfully!").await?;
+    ctx.say("Layout uploaded successfully!").await?;
     Ok(())
 }
 #[poise::command(slash_command, prefix_command)]
-async fn get_scores(
+async fn leaderboard(
     ctx: Context<'_>,
     #[description = "Filter by user"] user_filter: Option<String>,
     #[description = "Filter by layout"] layout_filter: Option<String>,
@@ -157,7 +157,7 @@ async fn get_scores(
 }
 
 #[poise::command(slash_command, prefix_command)]
-async fn insert_score(
+async fn upload_score(
     ctx: Context<'_>,
     #[description = "Name of the layout"] layout: String,
     #[description = "Speed of the score"] speed: u16,
@@ -190,7 +190,7 @@ async fn insert_score(
     .execute(&pool)
     .await?;
 
-    ctx.say("Score inserted successfully!").await?;
+    ctx.say("Score uploaded successfully!").await?;
     Ok(())
 }
 
@@ -202,7 +202,7 @@ async fn main() {
 
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
-            commands: vec![get_scores(), insert_layout(), insert_score()],
+            commands: vec![leaderboard(), upload_layout(), upload_score(), help()],
             ..Default::default()
         })
         .setup(|ctx, _ready, framework| {
@@ -217,4 +217,17 @@ async fn main() {
         .framework(framework)
         .await;
     client.unwrap().start().await.unwrap();
+}
+
+#[poise::command(slash_command, prefix_command)]
+async fn help(
+    ctx: Context<'_>,
+) -> Result<(), Error> {
+    let message = "Garf is a bot written to keep track of the highest scores in AKL, and the layouts used. To see the leaderboard, use `/leaderboard`. To put in your own scores, use `/upload_score` with your layout and speed. Feel free to upload your top scores on whatever layouts you like, even Qw\\*rty and Dv\\*rak. If the command returns an error, the layout probably isn't uploaded yet. To upload a layout, use `/upload_layout` with the layout name, the creator (@cmini if the creator isn't here), whether the layout uses magic and/or thumb alpha, and the main focus of the layout, like roll or alt for example. To get the leaderboard filtered by these properties, you can use `/leaderboard` with extra arguments. You can also view scores beyond the top 10 with the `page` argument, and I'm working on improving it";
+
+    let embed = CreateEmbed::new()
+        .title("Welcome to Garf Bot!")
+        .field("What this is for", message, false);
+    ctx.send(CreateReply::default().embed(embed)).await?;
+    Ok(())
 }
