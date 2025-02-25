@@ -68,7 +68,7 @@ async fn upload_layout(
         VALUES (?1, ?2, ?3, ?4, ?5)
         "#,
     )
-    .bind(name)
+    .bind(name.to_lowercase())
     .bind(creator.to_string())
     .bind(magic)
     .bind(thumb_alpha)
@@ -126,6 +126,13 @@ async fn leaderboard(
         None => user_filter.as_deref(),
     };
 
+    let layout_lowercase: Option<String> = match layout_filter {
+        Some(ref layout) => {
+            Some(layout.to_lowercase())
+        },
+        None => None
+    };
+
     // Execute the query
     let rows = sqlx::query(
         r#"
@@ -150,7 +157,7 @@ async fn leaderboard(
         "#,
     )
     .bind(user_id)
-    .bind(layout_filter)
+    .bind(layout_lowercase)
     .bind(magic_filter)
     .bind(thumb_alpha_filter)
     .bind(focus_filter)
