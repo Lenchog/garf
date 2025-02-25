@@ -102,7 +102,6 @@ async fn leaderboard(
     #[autocomplete = "autocomplete_focus"]
     focus_filter: Option<String>,
     #[description = "Filter by creator"] creator_filter: Option<String>,
-    #[description = "Page to view"] page: Option<u8>,
 ) -> Result<(), Error> {
     // Defer the response to indicate the bot is processing
     ctx.defer().await?;
@@ -110,10 +109,6 @@ async fn leaderboard(
     let db_path = std::env::var("GARFDB_PATH").unwrap_or("/var/lib/garf/scores.db".into());
     let pool = SqlitePool::connect(&format!("sqlite:{}", db_path)).await?;
 
-    let page_unwrapped = match page {
-        Some(ref page) => page - 1,
-        None => 0,
-    };
     // Extract the raw user ID from the creator_filter string
     let creator_id = match creator_filter {
         Some(ref creator) => {
@@ -180,27 +175,18 @@ async fn leaderboard(
     let mut i = 1;
     let mut strings: Vec<String> = vec![];
     for row in rows {
-        //if i > page_unwrapped * 10 && i <= page_unwrapped * 10 + 10 {
-            //message.push_str(&format!(
-            if strings.len() < i {
-                strings.push(String::default());
-            }
-            strings[i/10].push_str(&format!(
-                "#{} **{} WPM**: <@{}> on {}\n",
-                i,
-                &row.get::<i64, _>("Speed"),
-                row.get::<String, _>("User"),
-                &row.get::<String, _>("Layout")
-            ));
-        //}
+        if strings.len() < i {
+            strings.push(String::default());
+        }
+        strings[i / 10].push_str(&format!(
+            "#{} **{} WPM**: <@{}> on {}\n",
+            i,
+            &row.get::<i64, _>("Speed"),
+            row.get::<String, _>("User"),
+            &row.get::<String, _>("Layout")
+        ));
         i += 1;
     }
-
-    // Create the embed
-    /* let embed = CreateEmbed::new()
-        .title("Leaderboard")
-        .field("Scores", message, false);
-    ctx.send(CreateReply::default().embed(embed)).await?; */
 
     let string_refs: Vec<&str> = strings.iter().map(|s| s.as_str()).collect();
 
@@ -296,66 +282,3 @@ async fn help(ctx: Context<'_>) -> Result<(), Error> {
     ctx.send(CreateReply::default().embed(embed)).await?;
     Ok(())
 }
-/* async fn paginate<U, E>(
-    ctx: crate::Context<'_, U, E>,
-    pages: &[&str],
-) -> Result<(), serenity::Error> {
-    // Define some unique identifiers for the navigation buttons
-    let ctx_id = ctx.id();
-    let prev_button_id = format!("{}prev", ctx_id);
-    let next_button_id = format!("{}next", ctx_id);
-
-    let embed = CreateEmbed::new()
-        .title("Leaderboard")
-        .field("Scores", message, false);
-    // Send the embed with the first page as content
-    let reply = {
-        let components = serenity::CreateActionRow::Buttons(vec![
-            serenity::CreateButton::new(&prev_button_id).emoji('◀'),
-            serenity::CreateButton::new(&next_button_id).emoji('▶'),
-        ]);
-
-        crate::CreateReply::default()
-            .embed(embed)
-            .components(vec![components])
-    };
-
-    ctx.send(reply).await?;
-
-    // Loop through incoming interactions with the navigation buttons
-    let mut current_page = 0;
-    while let Some(press) = serenity::collector::ComponentInteractionCollector::new(ctx)
-        // We defined our button IDs to start with `ctx_id`. If they don't, some other command's
-        // button was pressed
-        .filter(move |press| press.data.custom_id.starts_with(&ctx_id.to_string()))
-        // Timeout when no navigation button has been pressed for 24 hours
-        .timeout(std::time::Duration::from_secs(3600 * 24))
-        .await
-    {
-        // Depending on which button was pressed, go to next or previous page
-        if press.data.custom_id == next_button_id {
-            current_page += 1;
-            if current_page >= pages.len() {
-                current_page = 0;
-            }
-        } else if press.data.custom_id == prev_button_id {
-            current_page = current_page.checked_sub(1).unwrap_or(pages.len() - 1);
-        } else {
-            // This is an unrelated button interaction
-            continue;
-        }
-
-        // Update the message with the new page contents
-        press
-            .create_response(
-                ctx.serenity_context(),
-                serenity::CreateInteractionResponse::UpdateMessage(
-                    serenity::CreateInteractionResponseMessage::new()
-                        .embed(serenity::CreateEmbed::new().description(pages[current_page])),
-                ),
-            )
-            .await?;
-    }
-
-    Ok(())
-} */
