@@ -1,9 +1,12 @@
 use dotenv::dotenv;
+use futures::stream;
 use poise::{
     CreateReply,
-    serenity_prelude::{self as serenity, CreateEmbed, UserId, futures::{self, Stream, StreamExt}},
+    serenity_prelude::{
+        self as serenity, CreateEmbed, UserId,
+        futures::{self, Stream, StreamExt},
+    },
 };
-use futures::{stream};
 use sqlx::{Row, SqlitePool};
 
 struct Data {} // User data, which is stored and accessible in all command invocations
@@ -15,11 +18,17 @@ async fn autocomplete_focus<'a>(
     _ctx: Context<'_>,
     focus: &'a str,
 ) -> impl Stream<Item = String> + 'a {
-    futures::stream::iter(&["sfb", "sfs", "alt", "inroll", "outroll", "onehands", "redirects"])
-        .filter(move |name| {
-            futures::future::ready(name.to_lowercase().contains(&focus.to_lowercase()))
-        })
-        .map(|name| name.to_string())
+    futures::stream::iter(&[
+        "sfb",
+        "sfs",
+        "alt",
+        "inroll",
+        "outroll",
+        "onehands",
+        "redirects",
+    ])
+    .filter(move |name| futures::future::ready(name.to_lowercase().contains(&focus.to_lowercase())))
+    .map(|name| name.to_string())
 }
 async fn autocomplete_layout<'a>(
     _ctx: Context<'_>,
@@ -27,7 +36,9 @@ async fn autocomplete_layout<'a>(
 ) -> impl Stream<Item = String> + 'a {
     // Connect to DB and fetch layout names
     let db_path = std::env::var("GARFDB_PATH").unwrap_or("/var/lib/garf/scores.db".into());
-    let pool = SqlitePool::connect(&format!("sqlite:{}", db_path)).await.unwrap();
+    let pool = SqlitePool::connect(&format!("sqlite:{}", db_path))
+        .await
+        .unwrap();
     let rows = sqlx::query("SELECT Name FROM Layout")
         .fetch_all(&pool)
         .await
@@ -35,17 +46,16 @@ async fn autocomplete_layout<'a>(
 
     let layouts_vec: Vec<String> = rows.into_iter().map(|row| row.get("Name")).collect();
 
-    stream::iter(layouts_vec)
-        .filter_map(move |name| {
-            let layout_lower = layout.to_lowercase();
-            async move {
-                if name.to_lowercase().contains(&layout_lower) {
-                    Some(name)
-                } else {
-                    None
-                }
+    stream::iter(layouts_vec).filter_map(move |name| {
+        let layout_lower = layout.to_lowercase();
+        async move {
+            if name.to_lowercase().contains(&layout_lower) {
+                Some(name)
+            } else {
+                None
             }
-        })
+        }
+    })
 }
 
 #[poise::command(slash_command, prefix_command)]
@@ -83,7 +93,7 @@ async fn upload_layout(
 async fn leaderboard(
     ctx: Context<'_>,
     #[description = "Filter by user"] user_filter: Option<String>,
-    #[description = "Filter by layout"] 
+    #[description = "Filter by layout"]
     #[autocomplete = "autocomplete_layout"]
     layout_filter: Option<String>,
     #[description = "Filter by magic"] magic_filter: Option<bool>,
@@ -102,7 +112,7 @@ async fn leaderboard(
 
     let page_unwrapped = match page {
         Some(ref page) => page - 1,
-        None => 0
+        None => 0,
     };
     // Extract the raw user ID from the creator_filter string
     let creator_id = match creator_filter {
@@ -129,10 +139,8 @@ async fn leaderboard(
     };
 
     let layout_lowercase: Option<String> = match layout_filter {
-        Some(ref layout) => {
-            Some(layout.to_lowercase())
-        },
-        None => None
+        Some(ref layout) => Some(layout.to_lowercase()),
+        None => None,
     };
 
     // Execute the query
@@ -198,9 +206,8 @@ async fn upload_score(
     #[description = "Speed of the score"] speed: u16,
     #[description = "Name of the layout"]
     #[autocomplete = "autocomplete_layout"]
-    layout: String
+    layout: String,
 ) -> Result<(), Error> {
-
     let db_path = std::env::var("GARFDB_PATH").unwrap_or("/var/lib/garf/scores.db".into());
     let pool = SqlitePool::connect(&format!("sqlite:{}", db_path)).await?;
     let user_id = ctx.author().id.to_string();
@@ -259,14 +266,13 @@ async fn main() {
 }
 
 #[poise::command(slash_command, prefix_command)]
-async fn help(
-    ctx: Context<'_>,
-) -> Result<(), Error> {
+async fn help(ctx: Context<'_>) -> Result<(), Error> {
     let message = "Garf is a bot written to keep track of the highest scores in AKL, and the layouts used. To see the leaderboard, use `/leaderboard`. To put in your own scores, use `/upload_score` with your layout and speed. Feel free to upload your top scores on whatever layouts you like, even Qw\\*rty and Dv\\*rak. If the command returns an error, the layout probably isn't uploaded yet. To upload a layout, use `/upload_layout` with the layout name, the creator (@cmini if the creator isn't here), whether the layout uses magic and/or thumb alpha, and the main focus of the layout, like roll or alt for example. To get the leaderboard filtered by these properties, you can use `/leaderboard` with extra arguments. You can also view scores beyond the top 10 with the `page` argument, and I'm working on improving it";
 
-    let embed = CreateEmbed::new()
-        .title("Welcome to Garf Bot!")
-        .field("What this is for", message, false);
+    let embed =
+        CreateEmbed::new()
+            .title("Welcome to Garf Bot!")
+            .field("What this is for", message, false);
     ctx.send(CreateReply::default().embed(embed)).await?;
     Ok(())
 }
