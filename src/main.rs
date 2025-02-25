@@ -83,12 +83,14 @@ async fn upload_layout(
 async fn leaderboard(
     ctx: Context<'_>,
     #[description = "Filter by user"] user_filter: Option<String>,
-    #[description = "Filter by layout"] layout_filter: Option<String>,
+    #[description = "Filter by layout"] 
+    #[autocomplete = "autocomplete_layout"]
+    layout_filter: Option<String>,
     #[description = "Filter by magic"] magic_filter: Option<bool>,
     #[description = "Filter by thumb alpha"] thumb_alpha_filter: Option<bool>,
     #[description = "Filter by focus"]
     #[autocomplete = "autocomplete_focus"]
-     focus_filter: Option<String>,
+    focus_filter: Option<String>,
     #[description = "Filter by creator"] creator_filter: Option<String>,
     #[description = "Page to view"] page: Option<u8>,
 ) -> Result<(), Error> {
