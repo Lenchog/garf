@@ -215,13 +215,23 @@ async fn upload_score(
     // Get the LayoutId for the given layout name
     let layout_id = sqlx::query(
         r#"
-        SELECT LayoutId FROM layout WHERE Name = ?1 COLLATE NOCASE
+        SELECT LayoutId FROM layout WHERE Name = ?1
         "#,
     )
     .bind(&layout)
     .fetch_one(&pool)
     .await?
     .get::<i64, _>("LayoutId");
+
+    let delete = sqlx::query(
+        r#"
+        DELETE FROM Score WHERE LayoutId = ?1 AND User = ?2
+        "#,
+    )
+    .bind(&layout_id)
+    .bind(&user_id)
+    .execute(&pool)
+    .await?;
 
     // Insert the score
     sqlx::query(
