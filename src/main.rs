@@ -192,7 +192,7 @@ async fn leaderboard(
 
     // Convert Vec<&str> to &[&str]
     let pages: &[&str] = &string_refs;
-    poise::samples::paginate(ctx, pages.try_into()?);
+    poise::samples::paginate(ctx, pages.try_into()?).await?;
     Ok(())
 }
 
