@@ -3,6 +3,7 @@ use poise::{
     CreateReply,
     serenity_prelude::{self as serenity, CreateEmbed, UserId, futures::{self, Stream, StreamExt}},
 };
+use futures::{stream};
 use sqlx::{Row, SqlitePool};
 
 struct Data {} // User data, which is stored and accessible in all command invocations
@@ -19,6 +20,32 @@ async fn autocomplete_focus<'a>(
             futures::future::ready(name.to_lowercase().contains(&focus.to_lowercase()))
         })
         .map(|name| name.to_string())
+}
+async fn autocomplete_layout<'a>(
+    _ctx: Context<'_>,
+    layout: &'a str,
+) -> impl Stream<Item = String> + 'a {
+    // Connect to DB and fetch layout names
+    let db_path = std::env::var("GARFDB_PATH").unwrap_or("/var/lib/garf/scores.db".into());
+    let pool = SqlitePool::connect(&format!("sqlite:{}", db_path)).await.unwrap();
+    let rows = sqlx::query("SELECT Name FROM Layout")
+        .fetch_all(&pool)
+        .await
+        .unwrap();
+
+    let layouts_vec: Vec<String> = rows.into_iter().map(|row| row.get("Name")).collect();
+
+    stream::iter(layouts_vec)
+        .filter_map(move |name| {
+            let layout_lower = layout.to_lowercase();
+            async move {
+                if name.to_lowercase().contains(&layout_lower) {
+                    Some(name)
+                } else {
+                    None
+                }
+            }
+        })
 }
 
 #[poise::command(slash_command, prefix_command)]
@@ -159,9 +186,12 @@ async fn leaderboard(
 #[poise::command(slash_command, prefix_command)]
 async fn upload_score(
     ctx: Context<'_>,
-    #[description = "Name of the layout"] layout: String,
     #[description = "Speed of the score"] speed: u16,
+    #[description = "Name of the layout"]
+    #[autocomplete = "autocomplete_layout"]
+    layout: String
 ) -> Result<(), Error> {
+
     let db_path = std::env::var("GARFDB_PATH").unwrap_or("/var/lib/garf/scores.db".into());
     let pool = SqlitePool::connect(&format!("sqlite:{}", db_path)).await?;
     let user_id = ctx.author().id.to_string();
