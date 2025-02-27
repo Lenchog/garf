@@ -175,7 +175,7 @@ async fn leaderboard(
     let mut i = 1;
     let mut strings: Vec<String> = vec![];
     for row in rows {
-        if strings.len() < i {
+        if strings.len() <= i / 10 {
             strings.push(String::default());
         }
         strings[i / 10].push_str(&format!(
