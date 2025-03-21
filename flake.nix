@@ -122,7 +122,7 @@
           };
 
           devshells.default = {
-            commands = [
+            /* commands = [
               {
                 name = "ldfix";
                 command = ''
@@ -130,7 +130,7 @@
                   export SQLITE3_LIB_DIR="${pkgs.sqlite.out}/lib"
                 '';
               }
-            ];
+            ]; */
             packages = with pkgs; [
               config.treefmt.build.wrapper
               nixfmt-rfc-style
