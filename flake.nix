@@ -146,7 +146,7 @@
             env = [
               {
                 name = "LD_LIBRARY_PATH";
-                value = "${pkgs.lib.makeLibraryPath [pkgs.sqlite pkgs.openssl]}";
+                value = "${pkgs.lib.makeLibraryPath build-deps}";
               }
               {
                 name = "SQLITE3_LIB_DIR";
